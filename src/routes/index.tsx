@@ -142,27 +142,20 @@ function Dashboard() {
   };
 
   const patchRow = (job_id: string, patch: Partial<JobRecord>) => {
-    let updated: JobRecord | null = null;
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r.job_id !== job_id) return r;
-        const next = { ...r, ...patch };
-        if (patch.job_status) {
-          next.completed_at =
-            patch.job_status === "Completed"
-              ? r.job_status === "Completed" && r.completed_at
-                ? r.completed_at
-                : nowStamp()
-              : "";
-        }
-        updated = next;
-        return next;
-      }),
-    );
-    if (updated) {
-      toast.success("Record updated", { description: job_id });
-      void dispatch("customer_updated", updated);
+    const current = rows.find((r) => r.job_id === job_id);
+    if (!current) return;
+    const updated: JobRecord = { ...current, ...patch };
+    if (patch.job_status) {
+      updated.completed_at =
+        patch.job_status === "Completed"
+          ? current.job_status === "Completed" && current.completed_at
+            ? current.completed_at
+            : nowStamp()
+          : "";
     }
+    setRows((prev) => prev.map((r) => (r.job_id === job_id ? updated : r)));
+    toast.success("Record updated", { description: job_id });
+    void dispatch("customer_updated", updated);
   };
 
   const remove = (row: JobRecord) => {
