@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { BRANCHES, OTHERS, SERVICES, STATUSES, type JobRecord, type JobStatus } from "@/lib/jobs";
 
-export type JobFormValues = Omit<JobRecord, "job_id" | "customer_id" | "completed_at">;
+export type JobFormValues = Omit<JobRecord, "job_id" | "completed_at">;
 
 const empty: JobFormValues = {
   customer_name: "",
@@ -106,9 +106,7 @@ export function JobFormDialog({
             {initial ? "Edit Job Record" : "Add New Customer / Job"}
           </DialogTitle>
           <DialogDescription className="text-xs uppercase tracking-[0.1em] text-surface-dark-muted">
-            {initial
-              ? `${initial.job_id} · ${initial.customer_id}`
-              : `${ids.job_id} · ${ids.customer_id}`}
+            {initial ? initial.job_id : ids.job_id}
           </DialogDescription>
         </DialogHeader>
 

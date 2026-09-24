@@ -24,6 +24,13 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings: () => void }) {
             >
               Job / Visits
             </Link>
+            <Link
+              to="/status"
+              className="rounded-md px-3 py-2 text-sm font-medium text-surface-dark-foreground/90 hover:bg-white/10"
+              activeProps={{ className: "bg-primary text-primary-foreground" }}
+            >
+              Status
+            </Link>
           </nav>
           <Button
             variant="ghost"
