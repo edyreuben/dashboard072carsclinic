@@ -26,7 +26,6 @@ export type JobStatus = (typeof STATUSES)[number];
 
 export type JobRecord = {
   job_id: string;
-  customer_id: string;
   customer_name: string;
   customer_phone: string;
   customer_email: string;
@@ -37,9 +36,23 @@ export type JobRecord = {
   completed_at: string;
 };
 
-export const STORAGE_KEY = "cc072_jobs";
-export const WEBHOOK_KEY = "cc072_webhook_url";
-export const DEFAULT_WEBHOOK = "https://reubenedidiong.app.n8n.cloud/webhook/costomer_details";
+export type WebhookConfig = {
+  postEvent: string;
+  getJobs: string;
+  getPositiveFeedback: string;
+  getNegativeFeedback: string;
+};
+
+export const DEFAULT_WEBHOOKS: WebhookConfig = {
+  postEvent: "https://reubenedidiong.app.n8n.cloud/webhook/costomer_details",
+  getJobs: "",
+  getPositiveFeedback: "",
+  getNegativeFeedback: "",
+};
+
+export const SESSION_KEY = "cc072_jobs";
+export const WEBHOOK_KEY = "cc072_webhooks";
+export const PAGE_SIZE = 50;
 
 export function nowStamp(): string {
   const d = new Date();
@@ -49,25 +62,70 @@ export function nowStamp(): string {
   )}:${p(d.getSeconds())}`;
 }
 
-export function nextIds(rows: JobRecord[]) {
-  const num = (v: string, prefix: string) => {
-    const n = parseInt(v.replace(prefix, ""), 10);
-    return Number.isFinite(n) ? n : 0;
-  };
-  const job = rows.reduce((m, r) => Math.max(m, num(r.job_id, "jb-")), 10000);
-  const cust = rows.reduce((m, r) => Math.max(m, num(r.customer_id, "cust-")), 1000);
-  return { job_id: `jb-${job + 1}`, customer_id: `cust-${cust + 1}` };
+export function nextJobId(rows: JobRecord[]) {
+  const max = rows.reduce((m, r) => {
+    const n = parseInt(r.job_id.replace("jb-", ""), 10);
+    return Number.isFinite(n) ? Math.max(m, n) : m;
+  }, 10000);
+  return `jb-${max + 1}`;
 }
 
-export function loadRows(): JobRecord[] {
+export function loadSessionRows(): JobRecord[] {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as JobRecord[];
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]") as JobRecord[];
   } catch {
     return [];
   }
 }
 
-export function saveRows(rows: JobRecord[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+export function saveSessionRows(rows: JobRecord[]) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(rows));
+}
+
+export function loadWebhooks(): WebhookConfig {
+  if (typeof window === "undefined") return DEFAULT_WEBHOOKS;
+  try {
+    return { ...DEFAULT_WEBHOOKS, ...JSON.parse(localStorage.getItem(WEBHOOK_KEY) ?? "{}") };
+  } catch {
+    return DEFAULT_WEBHOOKS;
+  }
+}
+
+export function saveWebhooks(cfg: WebhookConfig) {
+  localStorage.setItem(WEBHOOK_KEY, JSON.stringify(cfg));
+}
+
+/** Tolerantly map a raw webhook record into a JobRecord. */
+export function normalizeRecord(raw: Record<string, unknown>): JobRecord | null {
+  const get = (...keys: string[]) => {
+    for (const k of keys) {
+      const v = raw[k];
+      if (v !== undefined && v !== null && String(v).trim() !== "") return String(v);
+    }
+    return "";
+  };
+  const job_id = get("job_id", "jobId", "id");
+  const customer_name = get("customer_name", "customerName", "name");
+  if (!job_id && !customer_name) return null;
+  const status = get("job_status", "jobStatus", "status") || "Pending";
+  return {
+    job_id: job_id || `jb-${Math.abs(hash(customer_name))}`,
+    customer_name,
+    customer_phone: get("customer_phone", "customerPhone", "phone"),
+    customer_email: get("customer_email", "customerEmail", "email"),
+    manager_email: get("manager_email", "managerEmail"),
+    branch: get("branch"),
+    service_done: get("service_done", "serviceDone", "service"),
+    job_status: (STATUSES as readonly string[]).includes(status)
+      ? (status as JobStatus)
+      : "Pending",
+    completed_at: get("completed_at", "completedAt"),
+  };
+}
+
+function hash(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h;
 }
