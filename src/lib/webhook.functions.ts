@@ -29,9 +29,11 @@ const fetchSchema = z.object({
 });
 
 /** Fetches a page of records from an n8n "Get" webhook (server-side to avoid CORS). */
+type FetchResult = { ok: boolean; status: number; records: unknown[] };
+
 export const fetchRecords = createServerFn({ method: "POST" })
   .inputValidator((data) => fetchSchema.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<FetchResult> => {
     try {
       const res = await fetch(data.url, {
         method: "POST",
