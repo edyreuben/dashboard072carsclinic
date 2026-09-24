@@ -41,7 +41,7 @@ export function JobFormDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initial?: JobRecord | null;
-  ids: { job_id: string; customer_id: string };
+  ids: { job_id: string };
   onSubmit: (values: JobFormValues) => void;
 }) {
   const [values, setValues] = useState<JobFormValues>(empty);
