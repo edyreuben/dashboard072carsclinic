@@ -29,7 +29,7 @@ const fetchSchema = z.object({
 });
 
 /** Fetches a page of records from an n8n "Get" webhook (server-side to avoid CORS). */
-type FetchResult = { ok: boolean; status: number; records: unknown[] };
+type FetchResult = { ok: boolean; status: number; records: any[] };
 
 export const fetchRecords = createServerFn({ method: "POST" })
   .inputValidator((data) => fetchSchema.parse(data))
@@ -41,7 +41,7 @@ export const fetchRecords = createServerFn({ method: "POST" })
         body: JSON.stringify({ offset: data.offset, limit: data.limit }),
       });
       const text = await res.text();
-      if (!res.ok) return { ok: false, status: res.status, records: [] as unknown[] };
+      if (!res.ok) return { ok: false, status: res.status, records: [] as any[] };
       let parsed: unknown = [];
       try {
         parsed = JSON.parse(text);
@@ -51,12 +51,12 @@ export const fetchRecords = createServerFn({ method: "POST" })
       const records = Array.isArray(parsed)
         ? parsed
         : Array.isArray((parsed as { records?: unknown[] })?.records)
-          ? (parsed as { records: unknown[] }).records
+          ? (parsed as { records: any[] }).records
           : Array.isArray((parsed as { data?: unknown[] })?.data)
             ? (parsed as { data: unknown[] }).data
             : [];
       return { ok: true, status: res.status, records };
     } catch {
-      return { ok: false, status: 0, records: [] as unknown[] };
+      return { ok: false, status: 0, records: [] as any[] };
     }
   });
