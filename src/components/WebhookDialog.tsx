@@ -10,22 +10,30 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import type { WebhookConfig } from "@/lib/jobs";
+
+const FIELDS: { key: keyof WebhookConfig; label: string }[] = [
+  { key: "postEvent", label: "Post Customer / Job Event Webhook URL" },
+  { key: "getJobs", label: "Get Customer / Job Webhook URL" },
+  { key: "getPositiveFeedback", label: "Get Positive Feedback Webhook URL" },
+  { key: "getNegativeFeedback", label: "Get Negative Feedback Webhook URL" },
+];
 
 export function WebhookDialog({
   open,
   onOpenChange,
-  url,
+  config,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  url: string;
-  onSave: (url: string) => void;
+  config: WebhookConfig;
+  onSave: (cfg: WebhookConfig) => void;
 }) {
-  const [value, setValue] = useState(url);
+  const [values, setValues] = useState<WebhookConfig>(config);
   useEffect(() => {
-    if (open) setValue(url);
-  }, [open, url]);
+    if (open) setValues(config);
+  }, [open, config]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -35,18 +43,37 @@ export function WebhookDialog({
             n8n Webhook Configuration
           </DialogTitle>
           <DialogDescription className="text-xs uppercase tracking-[0.1em] text-surface-dark-muted">
-            Destination for customer_created &amp; customer_updated events
+            Endpoints for job events and data sync
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2 bg-card px-6 py-5">
-          <Label htmlFor="hook">N8N_WEBHOOK_URL</Label>
-          <Input id="hook" value={value} onChange={(e) => setValue(e.target.value)} />
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto bg-card px-6 py-5">
+          {FIELDS.map(({ key, label }) => (
+            <div key={key} className="space-y-2">
+              <Label htmlFor={`hook-${key}`}>{label}</Label>
+              <Input
+                id={`hook-${key}`}
+                value={values[key]}
+                onChange={(e) => setValues((p) => ({ ...p, [key]: e.target.value }))}
+                placeholder="https://your-n8n.app/webhook/..."
+              />
+            </div>
+          ))}
         </div>
         <DialogFooter className="border-t bg-card px-6 py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => onSave(value.trim())}>Save Webhook</Button>
+          <Button
+            onClick={() =>
+              onSave(
+                Object.fromEntries(
+                  Object.entries(values).map(([k, v]) => [k, v.trim()]),
+                ) as WebhookConfig,
+              )
+            }
+          >
+            Save Webhooks
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
