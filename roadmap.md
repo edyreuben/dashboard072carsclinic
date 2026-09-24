@@ -1,12 +1,13 @@
 # Roadmap
 
-## In progress
-- [ ] Verify current dashboard build (Playwright add-job flow)
+## Done
+- [x] Base dashboard build (header, table, add/edit modal, webhook dispatch)
+- [x] Removed Customer ID everywhere (UI, state, n8n payload)
+- [x] Two-column layout: left table (Name, Phone, Status, Actions; 20-row fixed height, internal scroll), right read-only details panel
+- [x] Settings modal with 4 webhook URL inputs (Post Event, Get Jobs, Get Positive/Negative Feedback)
+- [x] Initial load fetches first 50 via Get webhooks; infinite scroll loads next 50; rows cached in sessionStorage
+- [x] Success toasts only after webhook resolves; no "n8n" mention in success text
+- [x] Status nav tab/page added
 
-## New requirements (this message)
-- [ ] Remove Customer ID everywhere (UI, state, n8n payload)
-- [ ] Two-column layout: left table (Name, Phone, Status, Actions; ~20 rows visible, internal scroll, up to 50 loaded), right read-only details panel (row click / View)
-- [ ] Settings modal: 4 webhook URL inputs (Post Event, Get Customer/Job, Get Positive Feedback, Get Negative Feedback)
-- [ ] Initial load: fetch first 50 records via Get webhooks; infinite scroll fetches next 50 on scroll-to-bottom; cache rows in sessionStorage
-- [ ] Toasts: success only after webhook resolves; don't mention "n8n" in success text
-- [ ] New "Status" nav tab/page
+## Open
+- (none — Get webhook URLs are empty until configured in Settings)
