@@ -53,6 +53,8 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Manage customer service records and job status for 072 Cars Clinic.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Dashboard,
