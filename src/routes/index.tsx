@@ -24,11 +24,11 @@ import {
 } from "@/components/ui/table";
 import {
   PAGE_SIZE,
+  BRANCHES,
   STATUSES,
   loadSessionRows,
   loadWebhooks,
   nextJobId,
-  normalizeRecord,
   nowStamp,
   saveSessionRows,
   saveWebhooks,
@@ -36,7 +36,8 @@ import {
   type JobStatus,
   type WebhookConfig,
 } from "@/lib/jobs";
-import { fetchRecords, sendWebhook } from "@/lib/webhook.functions";
+import { sendWebhook } from "@/lib/webhook.functions";
+import { syncDashboardData } from "@/lib/dashboard-sync";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -52,6 +53,8 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Manage customer service records and job status for 072 Cars Clinic.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Dashboard,
@@ -67,80 +70,62 @@ const statusClass: Record<JobStatus, string> = {
 function Dashboard() {
   const [rows, setRows] = useState<JobRecord[]>([]);
   const [hydrated, setHydrated] = useState(false);
-  const [webhooks, setWebhooks] = useState<WebhookConfig>({ postEvent: "", getJobs: "", getPositiveFeedback: "", getNegativeFeedback: "" });
+  const [webhooks, setWebhooks] = useState<WebhookConfig>(() => loadWebhooks());
   const [formOpen, setFormOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editing, setEditing] = useState<JobRecord | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [branchFilter, setBranchFilter] = useState("all");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
-  const mergeRows = useCallback((incoming: JobRecord[]) => {
-    setRows((prev) => {
-      const seen = new Set(prev.map((r) => r.job_id));
-      const fresh = incoming.filter((r) => !seen.has(r.job_id));
-      return fresh.length ? [...prev, ...fresh] : prev;
+  const refreshData = useCallback(async (config: WebhookConfig, preserveLocal = false) => {
+    const data = await syncDashboardData(config);
+    setRows((current) => {
+      if (!preserveLocal) return data.jobs;
+      const remoteIds = new Set(data.jobs.map((row) => row.job_id));
+      return [...current.filter((row) => !remoteIds.has(row.job_id)), ...data.jobs];
     });
+    if (data.failedSources.length) {
+      toast.error("Connection with database failed, check specific webhook erroring.", {
+        description: data.failedSources.join(", "),
+      });
+    }
   }, []);
 
-  const loadPage = useCallback(
-    async (offset: number) => {
-      const cfg = loadWebhooks();
-      if (!cfg.getJobs) return false;
-      const res = await fetchRecords({ data: { url: cfg.getJobs, offset, limit: PAGE_SIZE } });
-      if (!res.ok || res.records.length === 0) return false;
-      const normalized = res.records
-        .map((r) => normalizeRecord(r as Record<string, unknown>))
-        .filter((r): r is JobRecord => r !== null);
-      mergeRows(normalized);
-      return normalized.length >= PAGE_SIZE;
-    },
-    [mergeRows],
-  );
-
-  // Initial load: restore session cache, then fetch first page + feedback webhooks.
+  // Restore the session cache immediately, then refresh all remote datasets.
   useEffect(() => {
     const cfg = loadWebhooks();
     setWebhooks(cfg);
-    const cached = loadSessionRows();
-    setRows(cached);
+    setRows(loadSessionRows());
     setHydrated(true);
-    void (async () => {
-      const more = await loadPage(cached.length);
-      setHasMore(more);
-      for (const url of [cfg.getPositiveFeedback, cfg.getNegativeFeedback]) {
-        if (!url) continue;
-        const res = await fetchRecords({ data: { url, offset: 0, limit: PAGE_SIZE } });
-        if (res.ok && res.records.length) {
-          mergeRows(
-            res.records
-              .map((r) => normalizeRecord(r as Record<string, unknown>))
-              .filter((r): r is JobRecord => r !== null),
-          );
-        }
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void refreshData(cfg);
+  }, [refreshData]);
 
   useEffect(() => {
     if (hydrated) saveSessionRows(rows);
   }, [rows, hydrated]);
 
-  // Infinite scroll: fetch next batch when scrolled to bottom.
+  const filteredRows = useMemo(
+    () => rows.filter((row) => branchFilter === "all" || row.branch === branchFilter),
+    [branchFilter, rows],
+  );
+  const visibleRows = filteredRows.slice(0, visibleCount);
+
+  // Infinite scroll reveals the next cached batch without another network request.
   const onScroll = () => {
     const el = scrollRef.current;
-    if (!el || !hasMore || loadingRef.current) return;
+    if (!el || visibleCount >= filteredRows.length || loadingRef.current) return;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
       loadingRef.current = true;
       setLoadingMore(true);
-      void loadPage(rows.length).then((more) => {
-        setHasMore(more);
+      window.setTimeout(() => {
+        setVisibleCount((count) => Math.min(count + PAGE_SIZE, filteredRows.length));
         loadingRef.current = false;
         setLoadingMore(false);
-      });
+      }, 150);
     }
   };
 
@@ -196,6 +181,7 @@ function Dashboard() {
       setFormOpen(false);
       setEditing(null);
       toast.success("Job record updated", { description: updated.job_id });
+      void refreshData(webhooks, true);
       return;
     }
     const created: JobRecord = {
@@ -209,6 +195,7 @@ function Dashboard() {
     setSelectedId(created.job_id);
     setFormOpen(false);
     toast.success("Customer job created", { description: created.job_id });
+    void refreshData(webhooks, true);
   };
 
   const patchRow = async (job_id: string, patch: Partial<JobRecord>) => {
@@ -227,12 +214,14 @@ function Dashboard() {
     if (!ok) return;
     setRows((prev) => prev.map((r) => (r.job_id === job_id ? updated : r)));
     toast.success("Record updated", { description: job_id });
+    void refreshData(webhooks, true);
   };
 
   const remove = (row: JobRecord) => {
     setRows((p) => p.filter((r) => r.job_id !== row.job_id));
     if (selectedId === row.job_id) setSelectedId(null);
     toast.success("Job record deleted", { description: row.job_id });
+    void refreshData(webhooks, true);
   };
 
   return (
@@ -247,15 +236,27 @@ function Dashboard() {
               {rows.length} record{rows.length === 1 ? "" : "s"} loaded
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-            className="font-bold"
-          >
-            <Plus className="size-4" /> Add New Customer / Job
-          </Button>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-56">
+              <label className="mb-1.5 block text-xs font-medium uppercase text-muted-foreground">Branch / Location</label>
+              <Select value={branchFilter} onValueChange={(value) => { setBranchFilter(value); setVisibleCount(PAGE_SIZE); }}>
+                <SelectTrigger aria-label="Filter jobs by branch"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All branches</SelectItem>
+                  {BRANCHES.map((branch) => <SelectItem key={branch} value={branch}>{branch}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+              className="font-bold"
+            >
+              <Plus className="size-4" /> Add New Customer / Job
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -276,14 +277,14 @@ function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.length === 0 && (
+                  {filteredRows.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="py-12 text-center text-muted-foreground">
                         No job records yet. Use “Add New Customer / Job” to create the first one.
                       </TableCell>
                     </TableRow>
                   )}
-                  {rows.map((row) => (
+                  {visibleRows.map((row) => (
                     <TableRow
                       key={row.job_id}
                       onClick={() => setSelectedId(row.job_id)}
@@ -355,6 +356,9 @@ function Dashboard() {
                 </p>
               )}
             </div>
+            <div className="border-t border-border px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+              {visibleRows.length} of {filteredRows.length} records loaded
+            </div>
           </div>
 
           {/* Right: details panel */}
@@ -417,6 +421,7 @@ function Dashboard() {
           saveWebhooks(cfg);
           setSettingsOpen(false);
           toast.success("Webhook settings saved");
+          void refreshData(cfg);
         }}
       />
     </div>

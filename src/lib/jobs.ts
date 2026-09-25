@@ -1,3 +1,5 @@
+import { CACHE_KEYS, DEFAULT_WEBHOOK_URLS, PAGE_SIZE } from "@/lib/app-config";
+
 export const BRANCHES = [
   "Ikeja Branch (Lagos)",
   "Victoria Island Branch (Lagos)",
@@ -43,16 +45,11 @@ export type WebhookConfig = {
   getNegativeFeedback: string;
 };
 
-export const DEFAULT_WEBHOOKS: WebhookConfig = {
-  postEvent: "https://reubenedidiong.app.n8n.cloud/webhook/costomer_details",
-  getJobs: "",
-  getPositiveFeedback: "",
-  getNegativeFeedback: "",
-};
+export const DEFAULT_WEBHOOKS: WebhookConfig = { ...DEFAULT_WEBHOOK_URLS };
 
-export const SESSION_KEY = "cc072_jobs";
-export const WEBHOOK_KEY = "cc072_webhooks";
-export const PAGE_SIZE = 50;
+export const SESSION_KEY = CACHE_KEYS.jobs;
+export const WEBHOOK_KEY = CACHE_KEYS.webhooks;
+export { PAGE_SIZE };
 
 export function nowStamp(): string {
   const d = new Date();
