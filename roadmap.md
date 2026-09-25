@@ -11,3 +11,11 @@
 
 ## Open
 - (none — Get webhook URLs are empty until configured in Settings)
+
+## Global sync and feedback dashboard
+- [ ] Centralize all four default webhook URLs and pre-fill settings
+- [ ] Refresh all datasets on load, refresh, and completed actions with connection-error feedback
+- [ ] Cache full fetched datasets and render jobs incrementally from cache
+- [ ] Add jobs branch filter and visible/total record counter
+- [ ] Build Status metrics chart, branch filter, categorized summary table, and editable/copyable details
+- [ ] Verify centered shared header and both pages end to end
