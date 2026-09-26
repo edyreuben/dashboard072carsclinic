@@ -10,7 +10,7 @@
 - [x] Status nav tab/page added
 
 ## Open
-- (none — Get webhook URLs are empty until configured in Settings)
+- None
 
 ## Global sync and feedback dashboard
 - [x] Centralize all four default webhook URLs and pre-fill settings
