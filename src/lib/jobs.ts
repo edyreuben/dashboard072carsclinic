@@ -83,7 +83,15 @@ export function saveSessionRows(rows: JobRecord[]) {
 export function loadWebhooks(): WebhookConfig {
   if (typeof window === "undefined") return DEFAULT_WEBHOOKS;
   try {
-    return { ...DEFAULT_WEBHOOKS, ...JSON.parse(localStorage.getItem(WEBHOOK_KEY) ?? "{}") };
+    const saved = JSON.parse(localStorage.getItem(WEBHOOK_KEY) ?? "{}") as Partial<WebhookConfig>;
+    return {
+      postEvent: saved.postEvent?.trim() || DEFAULT_WEBHOOKS.postEvent,
+      getJobs: saved.getJobs?.trim() || DEFAULT_WEBHOOKS.getJobs,
+      getPositiveFeedback:
+        saved.getPositiveFeedback?.trim() || DEFAULT_WEBHOOKS.getPositiveFeedback,
+      getNegativeFeedback:
+        saved.getNegativeFeedback?.trim() || DEFAULT_WEBHOOKS.getNegativeFeedback,
+    };
   } catch {
     return DEFAULT_WEBHOOKS;
   }
