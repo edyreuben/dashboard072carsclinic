@@ -21,9 +21,10 @@ export async function syncDashboardData(config: WebhookConfig): Promise<Dashboar
       result: url ? await fetchAllRecords({ data: { url } }) : { ok: false, status: 0, records: [] },
     })),
   );
-  const jobsRaw = results[0].result.records;
-  const positiveRaw = results[1].result.records;
-  const negativeRaw = results[2].result.records;
+  const [jobsResult, positiveResult, negativeResult] = results;
+  const jobsRaw = jobsResult?.result.records ?? [];
+  const positiveRaw = positiveResult?.result.records ?? [];
+  const negativeRaw = negativeResult?.result.records ?? [];
   const jobs = jobsRaw
     .map((item) => normalizeRecord(item as Record<string, unknown>))
     .filter((item): item is JobRecord => item !== null);
