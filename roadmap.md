@@ -10,7 +10,9 @@
 - [x] Status nav tab/page added
 
 ## Open
-- None
+- [ ] Show the exact failing webhook name, status, and returned error details
+- [ ] Load customer jobs from the Get Customer / Job response and continue from its highest Job ID
+- [ ] Refine Status category colors, date formatting, feedback panels, details layout, and chart spacing
 
 ## Global sync and feedback dashboard
 - [x] Centralize all four default webhook URLs and pre-fill settings
