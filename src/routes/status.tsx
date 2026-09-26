@@ -82,17 +82,17 @@ function StatusPage() {
   const selected = records.find((record) => record.id === selectedId) ?? null;
   const counts = useMemo(() => {
     const severity = (value: string) => filtered.filter((record) => record.severity === value).length;
-    return [{
-      label: "Feedback",
-      total: filtered.length,
-      ready: filtered.filter((record) => record.source === "positive").length,
-      high: severity("high"),
-      critical: severity("critical"),
-      repeat: filtered.filter((record) => ["repeat negative respond", "repeat negative response"].includes(record.severity)).length,
-      low: severity("low"),
-      medium: severity("medium"),
-      none: severity("none"),
-    }];
+    return [
+      { category: "Total Feedback", total: filtered.length },
+      { category: "Ready to Post", ready: filtered.filter((record) => record.source === "positive").length },
+      {
+        category: "Escalated",
+        high: severity("high"),
+        critical: severity("critical"),
+        repeat: filtered.filter((record) => ["repeat negative respond", "repeat negative response"].includes(record.severity)).length,
+      },
+      { category: "Private Queue", low: severity("low"), medium: severity("medium"), none: severity("none") },
+    ];
   }, [filtered]);
 
   const copyText = async (text: string, label: string) => {
@@ -149,7 +149,7 @@ function StatusPage() {
           <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
             <BarChart data={counts} margin={{ top: 12, right: 12, left: -12, bottom: 0 }} barCategoryGap="18%">
               <CartesianGrid vertical={false} />
-              <XAxis dataKey="label" hide />
+              <XAxis dataKey="category" tickLine={false} axisLine={false} />
               <YAxis allowDecimals={false} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="total" fill="var(--color-total)" radius={[3, 3, 0, 0]} name="Total Feedback" />
@@ -181,10 +181,10 @@ function StatusPage() {
             </div>
           </div>
 
-          <aside className="h-[650px] overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-card)] lg:sticky lg:top-6">
+          <aside className="h-[760px] overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-card)] lg:sticky lg:top-6">
             <div className="border-b bg-surface-dark px-5 py-4"><h3 className="text-sm font-bold uppercase tracking-[0.12em] text-surface-dark-foreground">Feedback Details</h3></div>
             {selected ? <div className="flex h-[calc(100%-53px)] flex-col overflow-y-auto p-5">
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 {[["Service Date", selected.service_date], ["Job ID", selected.job_id], ["Customer Name", selected.customer_name], ["Customer Phone", selected.customer_phone], ["Customer Email", selected.customer_email], ["Branch", selected.branch], ["Service Done", selected.service_done], ["Manager", selected.manager], ["Sentiment Score", selected.sentiment_score], ["Severity", selected.severity]].map(([label, value]) => <div key={label} className={label === "Customer Email" || label === "Service Done" ? "col-span-2" : ""}><dt className="text-xs uppercase text-muted-foreground">{label}</dt><dd className="mt-0.5 break-words font-medium text-foreground">{value || "—"}</dd></div>)}
               </dl>
               <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4 border-t border-border pt-5">

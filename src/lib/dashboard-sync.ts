@@ -1,6 +1,17 @@
 import { fetchAllRecords } from "@/lib/webhook.functions";
-import { normalizeRecord, saveSessionRows, type JobRecord, type WebhookConfig } from "@/lib/jobs";
-import { normalizeFeedback, saveFeedbackCache, type FeedbackRecord } from "@/lib/feedback";
+import {
+  loadSessionRows,
+  normalizeRecord,
+  saveSessionRows,
+  type JobRecord,
+  type WebhookConfig,
+} from "@/lib/jobs";
+import {
+  loadFeedbackCache,
+  normalizeFeedback,
+  saveFeedbackCache,
+  type FeedbackRecord,
+} from "@/lib/feedback";
 
 export type DashboardData = {
   jobs: JobRecord[];
@@ -25,18 +36,25 @@ export async function syncDashboardData(config: WebhookConfig): Promise<Dashboar
   const jobsRaw = jobsResult?.result.records ?? [];
   const positiveRaw = positiveResult?.result.records ?? [];
   const negativeRaw = negativeResult?.result.records ?? [];
-  const jobs = jobsRaw
+  const fetchedJobs = jobsRaw
     .map((item) => normalizeRecord(item as Record<string, unknown>))
     .filter((item): item is JobRecord => item !== null);
-  const positiveFeedback = positiveRaw.map((item, index) =>
+  const fetchedPositive = positiveRaw.map((item, index) =>
     normalizeFeedback(item as Record<string, unknown>, "positive", index),
   );
-  const negativeFeedback = negativeRaw.map((item, index) =>
+  const fetchedNegative = negativeRaw.map((item, index) =>
     normalizeFeedback(item as Record<string, unknown>, "negative", index),
   );
-  saveSessionRows(jobs);
-  saveFeedbackCache("positive", positiveFeedback);
-  saveFeedbackCache("negative", negativeFeedback);
+  const jobs = fetchedJobs.length ? fetchedJobs : loadSessionRows();
+  const positiveFeedback = fetchedPositive.length
+    ? fetchedPositive
+    : loadFeedbackCache("positive");
+  const negativeFeedback = fetchedNegative.length
+    ? fetchedNegative
+    : loadFeedbackCache("negative");
+  if (fetchedJobs.length) saveSessionRows(fetchedJobs);
+  if (fetchedPositive.length) saveFeedbackCache("positive", fetchedPositive);
+  if (fetchedNegative.length) saveFeedbackCache("negative", fetchedNegative);
   return {
     jobs,
     positiveFeedback,
