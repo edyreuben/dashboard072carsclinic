@@ -66,6 +66,11 @@
   --color-status-progress: var(--status-progress);
   --color-status-completed: var(--status-completed);
   --color-status-cancelled: var(--status-cancelled);
+  --color-category-ready: var(--category-ready);
+  --color-category-private: var(--category-private);
+  --color-category-escalated: var(--category-escalated);
+  --color-negative-feedback: var(--negative-feedback);
+  --color-negative-feedback-foreground: var(--negative-feedback-foreground);
   --shadow-card: var(--shadow-card);
   --font-sans: "Inter", ui-sans-serif, system-ui, Arial, sans-serif;
 }
@@ -98,6 +103,11 @@
   --status-progress: oklch(0.6 0.13 250);
   --status-completed: oklch(0.6 0.14 152);
   --status-cancelled: oklch(0.585 0.029 254);
+  --category-ready: oklch(0.55 0.14 152);
+  --category-private: oklch(0.55 0.13 250);
+  --category-escalated: oklch(0.53 0.2 27.4);
+  --negative-feedback: oklch(0.97 0.025 25);
+  --negative-feedback-foreground: oklch(0.42 0.16 25);
   --shadow-card: 0 4px 10px rgba(0, 0, 0, 0.05);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);

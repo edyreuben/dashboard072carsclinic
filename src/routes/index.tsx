@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { JobFormDialog, type JobFormValues } from "@/components/JobFormDialog";
 import { WebhookDialog } from "@/components/WebhookDialog";
+import { DataTablePanel, DetailsPanel } from "@/components/DashboardPanels";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -38,6 +39,7 @@ import {
 } from "@/lib/jobs";
 import { sendWebhook } from "@/lib/webhook.functions";
 import { syncDashboardData } from "@/lib/dashboard-sync";
+import { showWebhookFailures } from "@/lib/webhook-diagnostics";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -88,11 +90,7 @@ function Dashboard() {
       const remoteIds = new Set(data.jobs.map((row) => row.job_id));
       return [...current.filter((row) => !remoteIds.has(row.job_id)), ...data.jobs];
     });
-    if (data.failedSources.length) {
-      toast.error("Connection with database failed, check specific webhook erroring.", {
-        description: data.failedSources.join(", "),
-      });
-    }
+    showWebhookFailures(data.failures);
   }, []);
 
   // Restore the session cache immediately, then refresh all remote datasets.
@@ -137,8 +135,8 @@ function Dashboard() {
     row: JobRecord,
   ): Promise<boolean> => {
     if (!webhooks.postEvent) {
-      toast.error("No webhook configured", {
-        description: "Open settings to set the Post Event webhook URL.",
+      toast.error("Post Customer/Job Event Webhook Error", {
+        description: "Webhook URL is not configured",
       });
       return false;
     }
@@ -160,7 +158,13 @@ function Dashboard() {
       },
     });
     if (!res.ok) {
-      toast.error("Sync failed", { description: res.body || `Status ${res.status}` });
+      showWebhookFailures([
+        {
+          name: "Post Customer/Job Event Webhook",
+          status: res.status,
+          error: res.error,
+        },
+      ]);
       return false;
     }
     return true;
@@ -225,18 +229,18 @@ function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background font-sans">
+    <div className="flex min-h-screen flex-col bg-background font-sans lg:h-screen lg:overflow-hidden">
       <AppHeader onOpenSettings={() => setSettingsOpen(true)} />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 py-8 lg:min-h-0 lg:py-4">
+        <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:flex-wrap sm:justify-between lg:mb-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Job / Visits</h2>
             <p className="text-sm text-muted-foreground">
               {rows.length} record{rows.length === 1 ? "" : "s"} loaded
             </p>
           </div>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex shrink-0 flex-wrap items-end justify-end gap-3">
             <div className="min-w-56">
               <label className="mb-1.5 block text-xs font-medium uppercase text-muted-foreground">Branch / Location</label>
               <Select value={branchFilter} onValueChange={(value) => { setBranchFilter(value); setVisibleCount(PAGE_SIZE); }}>
@@ -259,14 +263,13 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_360px]">
           {/* Left: jobs table */}
-          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-card)]">
-            <div
-              ref={scrollRef}
-              onScroll={onScroll}
-              className="max-h-[calc(20*3.25rem+2.75rem)] overflow-y-auto"
-            >
+          <DataTablePanel
+            scrollRef={scrollRef}
+            onScroll={onScroll}
+            footer={`${visibleRows.length} of ${filteredRows.length} records loaded`}
+          >
               <Table>
                 <TableHeader className="sticky top-0 z-10">
                   <TableRow className="bg-muted">
@@ -355,21 +358,15 @@ function Dashboard() {
                   Loading more records…
                 </p>
               )}
-            </div>
-            <div className="border-t border-border px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-              {visibleRows.length} of {filteredRows.length} records loaded
-            </div>
-          </div>
+          </DataTablePanel>
 
           {/* Right: details panel */}
-          <div className="h-fit rounded-lg border border-border bg-card shadow-[var(--shadow-card)] lg:sticky lg:top-6">
-            <div className="border-b bg-surface-dark px-5 py-4">
-              <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-surface-dark-foreground">
-                Customer / Job Details
-              </h3>
-            </div>
+          <DetailsPanel
+            title="Customer / Job Details"
+            empty="Select a record to view its full details."
+          >
             {selected ? (
-              <dl className="space-y-4 px-5 py-5 text-sm">
+              <dl className="grid h-full content-start grid-cols-2 gap-x-4 gap-y-3 overflow-hidden px-5 py-4 text-sm">
                 {(
                   [
                     ["Job ID", selected.job_id],
@@ -383,20 +380,16 @@ function Dashboard() {
                     ["Completed At", selected.completed_at || "—"],
                   ] as const
                 ).map(([label, value]) => (
-                  <div key={label}>
+                  <div key={label} className={label === "Customer Email" || label === "Manager Email" || label === "Service Done" ? "col-span-2 min-w-0" : "min-w-0"}>
                     <dt className="text-xs uppercase tracking-wide text-muted-foreground">
                       {label}
                     </dt>
-                    <dd className="mt-0.5 font-medium text-foreground">{value}</dd>
+                    <dd className="mt-0.5 break-words font-medium text-foreground">{value}</dd>
                   </div>
                 ))}
               </dl>
-            ) : (
-              <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-                Select a record to view its full details.
-              </p>
-            )}
-          </div>
+            ) : null}
+          </DetailsPanel>
         </div>
       </main>
 

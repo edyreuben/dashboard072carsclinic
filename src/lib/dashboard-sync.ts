@@ -12,24 +12,27 @@ import {
   saveFeedbackCache,
   type FeedbackRecord,
 } from "@/lib/feedback";
+import type { WebhookFailure } from "@/lib/webhook-diagnostics";
 
 export type DashboardData = {
   jobs: JobRecord[];
   positiveFeedback: FeedbackRecord[];
   negativeFeedback: FeedbackRecord[];
-  failedSources: string[];
+  failures: WebhookFailure[];
 };
 
 export async function syncDashboardData(config: WebhookConfig): Promise<DashboardData> {
   const sources = [
-    ["Customer / Job", config.getJobs],
-    ["Positive Feedback", config.getPositiveFeedback],
-    ["Negative Feedback", config.getNegativeFeedback],
+    ["Get Customer/Job Webhook", config.getJobs],
+    ["Get Positive Feedback Webhook", config.getPositiveFeedback],
+    ["Get Negative Feedback Webhook", config.getNegativeFeedback],
   ] as const;
   const results = await Promise.all(
     sources.map(async ([name, url]) => ({
       name,
-      result: url ? await fetchAllRecords({ data: { url } }) : { ok: false, status: 0, records: [] },
+      result: url
+        ? await fetchAllRecords({ data: { url } })
+        : { ok: false, status: 0, records: [], error: "Webhook URL is not configured" },
     })),
   );
   const [jobsResult, positiveResult, negativeResult] = results;
@@ -59,8 +62,12 @@ export async function syncDashboardData(config: WebhookConfig): Promise<Dashboar
     jobs,
     positiveFeedback,
     negativeFeedback,
-    failedSources: results
+    failures: results
       .filter(({ result }) => !result.ok || result.records.length === 0)
-      .map(({ name }) => name),
+      .map(({ name, result }) => ({
+        name,
+        status: result.status,
+        error: result.error || `HTTP ${result.status}: Empty response; no records returned`,
+      })),
   };
 }
