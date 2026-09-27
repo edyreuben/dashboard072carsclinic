@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export function AppHeader({ onOpenSettings }: { onOpenSettings: () => void }) {
   return (
-    <header className="bg-surface-dark">
+    <header className="shrink-0 bg-surface-dark">
       <div className="mx-auto grid max-w-7xl gap-4 px-6 py-5 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
         <div className="hidden sm:block" aria-hidden="true" />
         <div className="text-center">
