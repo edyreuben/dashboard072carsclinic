@@ -10,7 +10,11 @@
 - [x] Status nav tab/page added
 
 ## Open
-- None
+- [ ] Add detailed timeout, HTTP, network, and invalid-response diagnostics for all four webhooks
+- [ ] Standardize both data tables and details panels with reusable fixed-height components
+- [ ] Constrain desktop pages to the viewport while preserving mobile access
+- [ ] Refine Status dates, category badges, feedback boxes, and compact chart
+- [ ] Verify customer population, sequential Job IDs, scrolling, counters, actions, and layouts
 
 ## Global sync and feedback dashboard
 - [x] Centralize all four default webhook URLs and pre-fill settings
