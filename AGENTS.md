@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Dashboard list/detail views use shared fixed-height panel shells so page-specific columns stay independent while scrolling behavior remains consistent.
