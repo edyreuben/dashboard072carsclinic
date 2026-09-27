@@ -6,19 +6,77 @@ const payloadSchema = z.object({
   payload: z.record(z.any()),
 });
 
+export type WebhookResult = {
+  ok: boolean;
+  status: number;
+  error: string;
+  body: string;
+};
+
+export type FetchResult = {
+  ok: boolean;
+  status: number;
+  error: string;
+  records: any[];
+};
+
+const TIMEOUT_MS = 12_000;
+
+function responseError(status: number, statusText: string, body: string) {
+  const message = body.trim().replace(/\s+/g, " ").slice(0, 300);
+  return `HTTP ${status}: ${message || statusText || "Request failed"}`;
+}
+
+function networkError(error: unknown) {
+  if (error instanceof Error && error.name === "AbortError") {
+    return `Failed to fetch: Network timeout after ${TIMEOUT_MS / 1000} seconds`;
+  }
+  const message = error instanceof Error ? error.message : "Unknown network failure";
+  return `Failed to fetch: ${message}`;
+}
+
+async function fetchWithTimeout(input: string | URL, init: RequestInit) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function recordsFromResponse(parsed: unknown): any[] | null {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === "object") {
+    if (Array.isArray((parsed as { records?: unknown[] }).records)) {
+      return (parsed as { records: any[] }).records;
+    }
+    if (Array.isArray((parsed as { data?: unknown[] }).data)) {
+      return (parsed as { data: any[] }).data;
+    }
+  }
+  return null;
+}
+
 export const sendWebhook = createServerFn({ method: "POST" })
   .inputValidator((data) => payloadSchema.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<WebhookResult> => {
     try {
-      const res = await fetch(data.url, {
+      const res = await fetchWithTimeout(data.url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data.payload),
       });
       const text = await res.text();
-      return { ok: res.ok, status: res.status, body: text.slice(0, 500) };
-    } catch (e) {
-      return { ok: false, status: 0, body: (e as Error).message };
+      const body = text.slice(0, 500);
+      return {
+        ok: res.ok,
+        status: res.status,
+        body,
+        error: res.ok ? "" : responseError(res.status, res.statusText, text),
+      };
+    } catch (error) {
+      return { ok: false, status: 0, body: "", error: networkError(error) };
     }
   });
 
@@ -28,36 +86,47 @@ const fetchSchema = z.object({
   limit: z.number().int().min(1).max(100),
 });
 
-/** Fetches a page of records from an n8n "Get" webhook (server-side to avoid CORS). */
-type FetchResult = { ok: boolean; status: number; records: any[] };
-
 export const fetchRecords = createServerFn({ method: "POST" })
   .inputValidator((data) => fetchSchema.parse(data))
   .handler(async ({ data }): Promise<FetchResult> => {
     try {
-      const res = await fetch(data.url, {
+      const res = await fetchWithTimeout(data.url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ offset: data.offset, limit: data.limit }),
       });
       const text = await res.text();
-      if (!res.ok) return { ok: false, status: res.status, records: [] as any[] };
+      if (!res.ok) {
+        return {
+          ok: false,
+          status: res.status,
+          records: [],
+          error: responseError(res.status, res.statusText, text),
+        };
+      }
       let parsed: unknown = [];
       try {
         parsed = JSON.parse(text);
       } catch {
-        parsed = [];
+        return {
+          ok: false,
+          status: res.status,
+          records: [],
+          error: `HTTP ${res.status}: Invalid JSON response`,
+        };
       }
-      const records = Array.isArray(parsed)
-        ? parsed
-        : Array.isArray((parsed as { records?: unknown[] })?.records)
-          ? (parsed as { records: any[] }).records
-          : Array.isArray((parsed as { data?: unknown[] })?.data)
-            ? (parsed as { data: unknown[] }).data
-            : [];
-      return { ok: true, status: res.status, records };
-    } catch {
-      return { ok: false, status: 0, records: [] as any[] };
+      const records = recordsFromResponse(parsed);
+      if (!records) {
+        return {
+          ok: false,
+          status: res.status,
+          records: [],
+          error: `HTTP ${res.status}: Invalid response shape; expected an array, records, or data`,
+        };
+      }
+      return { ok: true, status: res.status, records, error: "" };
+    } catch (error) {
+      return { ok: false, status: 0, records: [], error: networkError(error) };
     }
   });
 
@@ -73,22 +142,39 @@ export const fetchAllRecords = createServerFn({ method: "POST" })
         const url = new URL(data.url);
         url.searchParams.set("offset", String(offset));
         url.searchParams.set("limit", "100");
-        const res = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
+        const res = await fetchWithTimeout(url, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
         const text = await res.text();
-        if (!res.ok) return { ok: false, status: res.status, records };
+        if (!res.ok) {
+          return {
+            ok: false,
+            status: res.status,
+            records,
+            error: responseError(res.status, res.statusText, text),
+          };
+        }
         let parsed: unknown;
         try {
           parsed = JSON.parse(text);
         } catch {
-          return { ok: false, status: res.status, records };
+          return {
+            ok: false,
+            status: res.status,
+            records,
+            error: `HTTP ${res.status}: Invalid JSON response`,
+          };
         }
-        const page = Array.isArray(parsed)
-          ? parsed
-          : Array.isArray((parsed as { records?: unknown[] })?.records)
-            ? (parsed as { records: any[] }).records
-            : Array.isArray((parsed as { data?: unknown[] })?.data)
-              ? (parsed as { data: any[] }).data
-              : [];
+        const page = recordsFromResponse(parsed);
+        if (!page) {
+          return {
+            ok: false,
+            status: res.status,
+            records,
+            error: `HTTP ${res.status}: Invalid response shape; expected an array, records, or data`,
+          };
+        }
         if (!page.length) break;
         const fingerprint = JSON.stringify(page);
         if (seenPages.has(fingerprint)) break;
@@ -96,8 +182,13 @@ export const fetchAllRecords = createServerFn({ method: "POST" })
         records.push(...page);
         if (page.length < 100) break;
       }
-      return { ok: records.length > 0, status: 200, records };
-    } catch {
-      return { ok: false, status: 0, records };
+      return {
+        ok: records.length > 0,
+        status: 200,
+        records,
+        error: records.length ? "" : "HTTP 200: Empty response; no records returned",
+      };
+    } catch (error) {
+      return { ok: false, status: 0, records, error: networkError(error) };
     }
   });
