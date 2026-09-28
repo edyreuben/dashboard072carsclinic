@@ -82,7 +82,7 @@ In both the "Add New Customer" modal and inline table editor, the **Service Done
 
 Maintian prompt as it is, do not change anything. Add Manager Email as one of the customer data details and include it to the payload. all entries are mandetory
 
-This is the n8n webhook https://reubenedidiong.app.n8n.cloud/webhook/costomer_details
+This is the n8n webhook https://reubenedidiong.app.n8n.cloud/webhook/costumer_details
 
 This admin page is "Job / Visits"
 Later we will add a "Status Check" page with a sidebar naviagtion
