@@ -259,7 +259,6 @@ function Dashboard() {
       setFormOpen(false);
       setEditing(null);
       toast.success("Job record updated", { description: updated.job_id });
-      void refreshData(webhooks);
       return;
     }
     const created: JobRecord = {
@@ -273,7 +272,6 @@ function Dashboard() {
     setSelectedId(created.job_id);
     setFormOpen(false);
     toast.success("Customer job created", { description: created.job_id });
-    void refreshData(webhooks);
   };
 
   const patchRow = async (job_id: string, patch: Partial<JobRecord>) => {
@@ -297,14 +295,12 @@ function Dashboard() {
       return;
     }
     toast.success("Record updated", { description: job_id });
-    void refreshData(webhooks);
   };
 
   const remove = (row: JobRecord) => {
     setRows((p) => p.filter((r) => r.job_id !== row.job_id));
     if (selectedId === row.job_id) setSelectedId(null);
     toast.success("Job record deleted", { description: row.job_id });
-    void refreshData(webhooks);
   };
 
   return (
