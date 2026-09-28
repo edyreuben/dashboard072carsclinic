@@ -1,0 +1,1 @@
+- Dashboard list/detail views use shared fixed-height panel shells so page-specific columns stay independent while scrolling behavior remains consistent.
