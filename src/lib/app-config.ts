@@ -10,6 +10,9 @@ export const CACHE_KEYS = {
   positiveFeedback: "cc072_positive_feedback",
   negativeFeedback: "cc072_negative_feedback",
   webhooks: "cc072_webhooks",
+  jobsSyncReady: "cc072_jobs_sync_ready",
+  positiveFeedbackSyncReady: "cc072_positive_feedback_sync_ready",
+  negativeFeedbackSyncReady: "cc072_negative_feedback_sync_ready",
 } as const;
 
 export const PAGE_SIZE = 50;

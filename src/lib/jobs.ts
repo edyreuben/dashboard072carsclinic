@@ -48,6 +48,7 @@ export type WebhookConfig = {
 export const DEFAULT_WEBHOOKS: WebhookConfig = { ...DEFAULT_WEBHOOK_URLS };
 
 export const SESSION_KEY = CACHE_KEYS.jobs;
+export const SESSION_SYNC_READY_KEY = CACHE_KEYS.jobsSyncReady;
 export const WEBHOOK_KEY = CACHE_KEYS.webhooks;
 export { PAGE_SIZE };
 
@@ -69,6 +70,7 @@ export function nextJobId(rows: JobRecord[]) {
 
 export function loadSessionRows(): JobRecord[] {
   if (typeof window === "undefined") return [];
+  if (sessionStorage.getItem(SESSION_SYNC_READY_KEY) !== "true") return [];
   try {
     return JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]") as JobRecord[];
   } catch {
@@ -78,6 +80,10 @@ export function loadSessionRows(): JobRecord[] {
 
 export function saveSessionRows(rows: JobRecord[]) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(rows));
+}
+
+export function markSessionSyncReady() {
+  sessionStorage.setItem(SESSION_SYNC_READY_KEY, "true");
 }
 
 export function loadWebhooks(): WebhookConfig {

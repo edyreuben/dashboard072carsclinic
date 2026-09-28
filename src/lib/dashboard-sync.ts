@@ -2,12 +2,14 @@ import { fetchAllRecords } from "@/lib/webhook.functions";
 import {
   loadSessionRows,
   normalizeRecord,
+  markSessionSyncReady,
   saveSessionRows,
   type JobRecord,
   type WebhookConfig,
 } from "@/lib/jobs";
 import {
   loadFeedbackCache,
+  markFeedbackSyncReady,
   normalizeFeedback,
   saveFeedbackCache,
   type FeedbackRecord,
@@ -57,9 +59,18 @@ export async function syncDashboardData(config: WebhookConfig): Promise<Dashboar
   const negativeFeedback = negativeResult.result.ok
     ? fetchedNegative
     : loadFeedbackCache("negative");
-  if (jobsResult.result.ok) saveSessionRows(fetchedJobs);
-  if (positiveResult.result.ok) saveFeedbackCache("positive", fetchedPositive);
-  if (negativeResult.result.ok) saveFeedbackCache("negative", fetchedNegative);
+  if (jobsResult.result.ok) {
+    saveSessionRows(fetchedJobs);
+    markSessionSyncReady();
+  }
+  if (positiveResult.result.ok) {
+    saveFeedbackCache("positive", fetchedPositive);
+    markFeedbackSyncReady("positive");
+  }
+  if (negativeResult.result.ok) {
+    saveFeedbackCache("negative", fetchedNegative);
+    markFeedbackSyncReady("negative");
+  }
   return {
     jobs,
     positiveFeedback,

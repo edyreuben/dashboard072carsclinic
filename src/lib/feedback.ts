@@ -97,6 +97,11 @@ export function feedbackCategory(record: FeedbackRecord): FeedbackCategory {
 
 export function loadFeedbackCache(source: FeedbackSource): FeedbackRecord[] {
   if (typeof window === "undefined") return [];
+  const readyKey =
+    source === "positive"
+      ? CACHE_KEYS.positiveFeedbackSyncReady
+      : CACHE_KEYS.negativeFeedbackSyncReady;
+  if (sessionStorage.getItem(readyKey) !== "true") return [];
   const key = source === "positive" ? CACHE_KEYS.positiveFeedback : CACHE_KEYS.negativeFeedback;
   try {
     return JSON.parse(sessionStorage.getItem(key) ?? "[]") as FeedbackRecord[];
@@ -108,4 +113,12 @@ export function loadFeedbackCache(source: FeedbackSource): FeedbackRecord[] {
 export function saveFeedbackCache(source: FeedbackSource, records: FeedbackRecord[]) {
   const key = source === "positive" ? CACHE_KEYS.positiveFeedback : CACHE_KEYS.negativeFeedback;
   sessionStorage.setItem(key, JSON.stringify(records));
+}
+
+export function markFeedbackSyncReady(source: FeedbackSource) {
+  const key =
+    source === "positive"
+      ? CACHE_KEYS.positiveFeedbackSyncReady
+      : CACHE_KEYS.negativeFeedbackSyncReady;
+  sessionStorage.setItem(key, "true");
 }
