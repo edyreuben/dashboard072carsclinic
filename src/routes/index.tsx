@@ -150,13 +150,11 @@ function Dashboard() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
-  const refreshData = useCallback(async (config: WebhookConfig, preserveLocal = false) => {
+  const refreshData = useCallback(async (config: WebhookConfig) => {
     const data = await syncDashboardData(config);
-    setRows((current) => {
-      if (!preserveLocal) return data.jobs;
-      const remoteIds = new Set(data.jobs.map((row) => row.job_id));
-      return [...current.filter((row) => !remoteIds.has(row.job_id)), ...data.jobs];
-    });
+    // A successful GET webhook response is the source of truth. The sync
+    // layer falls back to cache only when that request fails.
+    setRows(data.jobs);
     showWebhookFailures(data.failures);
   }, []);
 
@@ -261,7 +259,7 @@ function Dashboard() {
       setFormOpen(false);
       setEditing(null);
       toast.success("Job record updated", { description: updated.job_id });
-      void refreshData(webhooks, true);
+      void refreshData(webhooks);
       return;
     }
     const created: JobRecord = {
@@ -275,7 +273,7 @@ function Dashboard() {
     setSelectedId(created.job_id);
     setFormOpen(false);
     toast.success("Customer job created", { description: created.job_id });
-    void refreshData(webhooks, true);
+    void refreshData(webhooks);
   };
 
   const patchRow = async (job_id: string, patch: Partial<JobRecord>) => {
@@ -299,14 +297,14 @@ function Dashboard() {
       return;
     }
     toast.success("Record updated", { description: job_id });
-    void refreshData(webhooks, true);
+    void refreshData(webhooks);
   };
 
   const remove = (row: JobRecord) => {
     setRows((p) => p.filter((r) => r.job_id !== row.job_id));
     if (selectedId === row.job_id) setSelectedId(null);
     toast.success("Job record deleted", { description: row.job_id });
-    void refreshData(webhooks, true);
+    void refreshData(webhooks);
   };
 
   return (
