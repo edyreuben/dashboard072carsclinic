@@ -48,12 +48,18 @@ export async function syncDashboardData(config: WebhookConfig): Promise<Dashboar
   const fetchedNegative = negativeRaw.map((item, index) =>
     normalizeFeedback(item as Record<string, unknown>, "negative", index),
   );
-  const jobs = fetchedJobs.length ? fetchedJobs : loadSessionRows();
-  const positiveFeedback = fetchedPositive.length ? fetchedPositive : loadFeedbackCache("positive");
-  const negativeFeedback = fetchedNegative.length ? fetchedNegative : loadFeedbackCache("negative");
-  if (fetchedJobs.length) saveSessionRows(fetchedJobs);
-  if (fetchedPositive.length) saveFeedbackCache("positive", fetchedPositive);
-  if (fetchedNegative.length) saveFeedbackCache("negative", fetchedNegative);
+  // A successful empty webhook response is authoritative: clear the old
+  // cache instead of falling back to stale records from the previous sync.
+  const jobs = jobsResult.result.ok ? fetchedJobs : loadSessionRows();
+  const positiveFeedback = positiveResult.result.ok
+    ? fetchedPositive
+    : loadFeedbackCache("positive");
+  const negativeFeedback = negativeResult.result.ok
+    ? fetchedNegative
+    : loadFeedbackCache("negative");
+  if (jobsResult.result.ok) saveSessionRows(fetchedJobs);
+  if (positiveResult.result.ok) saveFeedbackCache("positive", fetchedPositive);
+  if (negativeResult.result.ok) saveFeedbackCache("negative", fetchedNegative);
   return {
     jobs,
     positiveFeedback,

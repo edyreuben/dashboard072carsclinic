@@ -358,7 +358,7 @@ function Dashboard() {
                   <TableHead>Customer Name</TableHead>
                   <TableHead>Phone Number</TableHead>
                   <TableHead className="min-w-[150px]">Job Status</TableHead>
-                  <TableHead className="w-[96px] text-right">Actions</TableHead>
+                  <TableHead className="w-[96px] text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
