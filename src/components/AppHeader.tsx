@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Settings } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { logout } from "@/lib/auth";
 
-export function AppHeader({ onOpenSettings }: { onOpenSettings: () => void }) {
+export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   return (
     <header className="shrink-0 bg-surface-dark">
       <div className="mx-auto grid max-w-7xl gap-4 px-6 py-5 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-        <div className="hidden items-center sm:flex">
+        <div className="flex items-center">
           <img
             src="/car-clinic-logo.png"
             alt="072 Cars Clinic logo"
@@ -21,34 +22,46 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings: () => void }) {
             Auto Maintenance &amp; Care Specialists
           </p>
         </div>
-        <div className="flex items-center justify-center gap-3 sm:justify-self-end">
-          <nav className="hidden items-center gap-1 sm:flex">
-            <Link
-              to="/"
-              className="rounded-md px-3 py-2 text-sm font-medium text-surface-dark-foreground/90 hover:bg-white/10"
-              activeProps={{ className: "bg-primary text-primary-foreground" }}
-              activeOptions={{ exact: true }}
+        {onOpenSettings && (
+          <div className="flex items-center justify-center gap-3 sm:justify-self-end">
+            <nav className="hidden items-center gap-1 sm:flex">
+              <Link
+                to="/"
+                className="rounded-md px-3 py-2 text-sm font-medium text-surface-dark-foreground/90 hover:bg-white/10"
+                activeProps={{ className: "bg-primary text-primary-foreground" }}
+                activeOptions={{ exact: true }}
+              >
+                Job / Visits
+              </Link>
+              <Link
+                to="/status"
+                className="rounded-md px-3 py-2 text-sm font-medium text-surface-dark-foreground/90 hover:bg-white/10"
+                activeProps={{ className: "bg-primary text-primary-foreground" }}
+              >
+                Status
+              </Link>
+            </nav>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="n8n Webhook Configuration"
+              onClick={onOpenSettings}
+              className="text-surface-dark-foreground hover:bg-white/10 hover:text-surface-dark-foreground"
             >
-              Job / Visits
-            </Link>
-            <Link
-              to="/status"
-              className="rounded-md px-3 py-2 text-sm font-medium text-surface-dark-foreground/90 hover:bg-white/10"
-              activeProps={{ className: "bg-primary text-primary-foreground" }}
+              <Settings className="size-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Log out"
+              title="Log out"
+              onClick={logout}
+              className="text-surface-dark-foreground hover:bg-white/10 hover:text-surface-dark-foreground"
             >
-              Status
-            </Link>
-          </nav>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="n8n Webhook Configuration"
-            onClick={onOpenSettings}
-            className="text-surface-dark-foreground hover:bg-white/10 hover:text-surface-dark-foreground"
-          >
-            <Settings className="size-5" />
-          </Button>
-        </div>
+              <LogOut className="size-5" />
+            </Button>
+          </div>
+        )}
       </div>
     </header>
   );

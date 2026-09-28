@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { WebhookConfig } from "@/lib/jobs";
+import { LoginResetDialog } from "@/components/LoginResetDialog";
 
 const FIELDS: { key: keyof WebhookConfig; label: string }[] = [
   { key: "postEvent", label: "Post Customer / Job Event Webhook URL" },
@@ -31,6 +32,7 @@ export function WebhookDialog({
   onSave: (cfg: WebhookConfig) => void;
 }) {
   const [values, setValues] = useState<WebhookConfig>(config);
+  const [resetOpen, setResetOpen] = useState(false);
   useEffect(() => {
     if (open) setValues(config);
   }, [open, config]);
@@ -60,6 +62,9 @@ export function WebhookDialog({
           ))}
         </div>
         <DialogFooter className="border-t bg-card px-6 py-4">
+          <Button variant="outline" onClick={() => setResetOpen(true)}>
+            Reset Login
+          </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -76,6 +81,7 @@ export function WebhookDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <LoginResetDialog open={resetOpen} onOpenChange={setResetOpen} />
     </Dialog>
   );
 }

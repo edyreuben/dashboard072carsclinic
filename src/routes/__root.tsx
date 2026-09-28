@@ -7,10 +7,12 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
+import { LoginScreen } from "@/components/LoginScreen";
+import { isAuthenticated } from "@/lib/auth";
 
 function NotFoundComponent() {
   return (
@@ -124,11 +126,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const update = () => setAuthenticated(isAuthenticated());
+    update();
+    window.addEventListener("cc072-auth-change", update);
+    return () => window.removeEventListener("cc072-auth-change", update);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {authenticated === null ? null : authenticated ? (
+        <Outlet />
+      ) : (
+        <LoginScreen onSuccess={() => setAuthenticated(true)} />
+      )}
       <Toaster position="bottom-right" richColors />
     </QueryClientProvider>
   );
