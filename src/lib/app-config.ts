@@ -1,8 +1,8 @@
 export const DEFAULT_WEBHOOK_URLS = {
-  postEvent: "https://reubenedidiong.app.n8n.cloud/webhook/costumer_details",
-  getJobs: "https://reubenedidiong.app.n8n.cloud/webhook/get_costumer_details",
-  getPositiveFeedback: "https://reubenedidiong.app.n8n.cloud/webhook/get_positive_feedback",
-  getNegativeFeedback: "https://reubenedidiong.app.n8n.cloud/webhook/get_negative_feedback",
+  postEvent: "https://edyreuben.app.n8n.cloud/webhook/costumer_details",
+  getJobs: "https://edyreuben.app.n8n.cloud/webhook/get_costumer_details",
+  getPositiveFeedback: "https://edyreuben.app.n8n.cloud/webhook/get_positive_feedback",
+  getNegativeFeedback: "https://edyreuben.app.n8n.cloud/webhook/get_negative_feedback",
 } as const;
 
 export const CACHE_KEYS = {

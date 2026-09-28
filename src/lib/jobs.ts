@@ -90,22 +90,22 @@ export function loadWebhooks(): WebhookConfig {
   if (typeof window === "undefined") return DEFAULT_WEBHOOKS;
   try {
     const saved = JSON.parse(localStorage.getItem(WEBHOOK_KEY) ?? "{}") as Partial<WebhookConfig>;
-    const savedGetJobs = saved.getJobs?.trim();
-    const legacyGetJobs = [
-      "https://reubenedidiong.app.n8n.cloud/webhook-test/get_costomer_details",
-      "https://reubenedidiong.app.n8n.cloud/webhook-test/get_costumer_details",
-      "https://reubenedidiong.app.n8n.cloud/webhook/get_costomer_details",
-    ];
+    const legacyOrigin = "https://reubenedidiong.app.n8n.cloud/";
+    const migrateWebhook = (value: string | undefined, fallback: string) => {
+      const trimmed = value?.trim();
+      return !trimmed || trimmed.startsWith(legacyOrigin) ? fallback : trimmed;
+    };
     return {
-      postEvent: saved.postEvent?.trim() || DEFAULT_WEBHOOKS.postEvent,
-      getJobs:
-        !savedGetJobs || legacyGetJobs.includes(savedGetJobs)
-          ? DEFAULT_WEBHOOKS.getJobs
-          : savedGetJobs,
-      getPositiveFeedback:
-        saved.getPositiveFeedback?.trim() || DEFAULT_WEBHOOKS.getPositiveFeedback,
-      getNegativeFeedback:
-        saved.getNegativeFeedback?.trim() || DEFAULT_WEBHOOKS.getNegativeFeedback,
+      postEvent: migrateWebhook(saved.postEvent, DEFAULT_WEBHOOKS.postEvent),
+      getJobs: migrateWebhook(saved.getJobs, DEFAULT_WEBHOOKS.getJobs),
+      getPositiveFeedback: migrateWebhook(
+        saved.getPositiveFeedback,
+        DEFAULT_WEBHOOKS.getPositiveFeedback,
+      ),
+      getNegativeFeedback: migrateWebhook(
+        saved.getNegativeFeedback,
+        DEFAULT_WEBHOOKS.getNegativeFeedback,
+      ),
     };
   } catch {
     return DEFAULT_WEBHOOKS;
