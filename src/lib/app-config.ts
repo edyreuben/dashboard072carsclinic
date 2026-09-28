@@ -1,5 +1,5 @@
 export const DEFAULT_WEBHOOK_URLS = {
-  postEvent: "https://reubenedidiong.app.n8n.cloud/webhook/costomer_details",
+  postEvent: "https://reubenedidiong.app.n8n.cloud/webhook/costumer_details",
   getJobs: "https://reubenedidiong.app.n8n.cloud/webhook/get_costumer_details",
   getPositiveFeedback: "https://reubenedidiong.app.n8n.cloud/webhook/get_positive_feedback",
   getNegativeFeedback: "https://reubenedidiong.app.n8n.cloud/webhook/get_negative_feedback",
