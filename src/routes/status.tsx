@@ -56,11 +56,13 @@ function LocationMultiSelect({
       <PopoverTrigger asChild>
         <Button variant="outline" className="h-9 min-w-64 justify-between font-normal">
           <span className="truncate">
-            {allSelected
-              ? locations.length > 1
-                ? "All locations"
-                : "1 location"
-              : `${selected.length} location${selected.length === 1 ? "" : "s"} selected`}
+            {locations.length === 0
+              ? "—"
+              : allSelected
+                ? locations.length > 1
+                  ? "All locations"
+                  : "1 location"
+                : `${selected.length} location${selected.length === 1 ? "" : "s"} selected`}
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         </Button>
