@@ -108,7 +108,7 @@ export const fetchRecords = createServerFn({ method: "POST" })
       }
       let parsed: unknown = [];
       try {
-        parsed = JSON.parse(text);
+        parsed = text.trim() ? JSON.parse(text) : [];
       } catch {
         return {
           ok: false,
@@ -159,7 +159,9 @@ export const fetchAllRecords = createServerFn({ method: "POST" })
         }
         let parsed: unknown;
         try {
-          parsed = JSON.parse(text);
+          // A successful n8n webhook with an empty Google Sheet may return a
+          // blank body. Treat that as an empty dataset, not a webhook error.
+          parsed = text.trim() ? JSON.parse(text) : [];
         } catch {
           return {
             ok: false,
@@ -185,10 +187,10 @@ export const fetchAllRecords = createServerFn({ method: "POST" })
         if (page.length < 100) break;
       }
       return {
-        ok: records.length > 0,
+        ok: true,
         status: 200,
         records,
-        error: records.length ? "" : "HTTP 200: Empty response; no records returned",
+        error: "",
       };
     } catch (error) {
       return { ok: false, status: 0, records, error: networkError(error) };

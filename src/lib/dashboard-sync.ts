@@ -59,7 +59,7 @@ export async function syncDashboardData(config: WebhookConfig): Promise<Dashboar
     positiveFeedback,
     negativeFeedback,
     failures: results
-      .filter(({ result }) => !result.ok || result.records.length === 0)
+      .filter(({ result }) => !result.ok)
       .map(({ name, result }) => ({
         name,
         status: result.status,
