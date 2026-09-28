@@ -352,7 +352,7 @@ function Dashboard() {
                   <TableHead>Customer Name</TableHead>
                   <TableHead>Phone Number</TableHead>
                   <TableHead className="min-w-[150px]">Job Status</TableHead>
-                  <TableHead className="w-[96px] text-right">Action</TableHead>
+                  <TableHead className="w-[96px] text-left">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -391,8 +391,8 @@ function Dashboard() {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-end gap-1">
+                    <TableCell className="text-left" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-start gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
